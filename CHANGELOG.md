@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.7] - 2026-10-29
+
+### Changed
+
+- 服务端、TUI 和状态 RPC 统一使用作者命名空间 `myoldtime.session-autotitle`，替换原 `local.` 前缀。
+- TUI 命令 ID 统一为 `myoldtime.session-autotitle.status`；斜杠命令和 `autotitle_status` 工具名继续使用原有名称。
+- 更新安装、禁用、RPC 和升级文档。
+
+### Added
+
+- 旧 ID 存储的只读迁移桥接包及一次性 `migrateLegacyState` 选项，保留持久锁、任务和命名进度；分页、可恢复且优先保留新版已有记录。
+
+从 v0.1.6 或更早版本升级请先阅读[状态迁移步骤](docs/MIGRATING-0.1.7.md)。
+
 ## [0.1.6] - 2026-10-29
 
 ### Fixed
@@ -55,3 +69,4 @@
 
 [0.1.5]: https://github.com/MyOldTime/opencode-session-autotitle/releases/tag/v0.1.5
 [0.1.6]: https://github.com/MyOldTime/opencode-session-autotitle/releases/tag/v0.1.6
+[0.1.7]: https://github.com/MyOldTime/opencode-session-autotitle/releases/tag/v0.1.7

@@ -1,12 +1,14 @@
 import { AutoTitleController, PLUGIN_ID } from './src/controller.mjs';
 import { AutoTitleStatusRpc } from './src/status-rpc.mjs';
 import { formatStatus } from './src/status-display.mjs';
+import { migrateLegacyState } from './src/migration.mjs';
 
 export default {
   id: PLUGIN_ID,
   async setup(ctx) {
     const controller = new AutoTitleController(ctx);
     try {
+      if (controller.options.migrateLegacyState) await migrateLegacyState(ctx);
       await controller.start();
       controller.registrations.push(await ctx.rpc.register(AutoTitleStatusRpc, {
         read: async ({sessionID}) => {

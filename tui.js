@@ -1,16 +1,17 @@
 import { AutoTitleStatusRpc } from './src/status-rpc.mjs';
+import { TUI_PLUGIN_ID, STATUS_RPC_ID } from './src/identity.mjs';
 
 // Plugin.define is an identity helper in 2.2.0, just as for our server entry.
 // No JSX/OpenTUI dependencies: use the host's supported alert dialog API.
 export default {
-  id: 'local.session-autotitle.tui',
+  id: TUI_PLUGIN_ID,
   setup(context) {
     let disposed = false;
     let pending = false;
     context.keymap.layer(() => ({
       mode: 'global',
       commands: [{
-        id: 'session-autotitle.status', title: '查看自动命名状态', group: '自动命名',
+        id: STATUS_RPC_ID, title: '查看自动命名状态', group: '自动命名',
         palette: true, slash: {name: 'autotitle-status'},
         run: async () => {
           if (disposed || pending) return;
@@ -36,7 +37,7 @@ export default {
             // Never surface raw transport errors (may contain private URLs).
             if (stillHere()) context.ui.toast.show({
               title: '无法读取自动命名状态',
-              message: '请确认服务已连接，且该会话所在目录已加载 v0.1.4 或更新的自动命名插件。未修改会话。',
+              message: '请确认服务已连接，且该会话所在目录已加载 v0.1.7 或更新的自动命名插件。未修改会话。',
               variant: 'error', duration: 8000,
             });
           } finally { pending = false; }

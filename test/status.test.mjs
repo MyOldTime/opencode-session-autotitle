@@ -86,7 +86,9 @@ test('server registers disposable read-only RPC and retains tool compatibility',
   };
   const cleanup = await server.setup(ctx);
   try {
+    assert.equal(server.id, 'myoldtime.session-autotitle');
     assert.equal(contract, AutoTitleStatusRpc);
+    assert.equal(contract.id, 'myoldtime.session-autotitle.status');
     assert.deepEqual(contract.events, {});
     assert.deepEqual(contract.methods.read.errors, {});
     assert.equal('pattern' in contract.methods.read.input.properties.sessionID, false);
@@ -150,6 +152,8 @@ function uiHarness() {
 
 test('TUI slash command reads selected session via location-scoped RPC and shows alert', async () => {
   const h = uiHarness();
+  assert.equal(tui.id, 'myoldtime.session-autotitle.tui');
+  assert.equal(h.command.id, AutoTitleStatusRpc.id);
   assert.equal(h.command.slash.name, 'autotitle-status'); assert.equal(h.command.palette, true);
   await h.command.run();
   assert.deepEqual(h.calls[0][0], {sessionID: id}); assert.deepEqual(h.calls[0][1].location, location);

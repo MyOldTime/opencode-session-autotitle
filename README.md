@@ -8,7 +8,9 @@
 
 Adaptive Chinese session titles for OpenCode V2, with multi-task retention, persistent manual locks, read-only status and bounded generation retries.
 
-插件 ID：`local.session-autotitle`；GitHub Packages 包名：`@myoldtime/opencode-session-autotitle`。包含服务端和官方终端版 TUI 入口，无生产运行依赖。
+插件 ID：`myoldtime.session-autotitle`；GitHub Packages 包名：`@myoldtime/opencode-session-autotitle`。包含服务端和官方终端版 TUI 入口，无生产运行依赖。
+
+标识采用作者的 GitHub/npm 命名空间：服务端 `myoldtime.session-autotitle`、终端 `myoldtime.session-autotitle.tui`、状态 RPC `myoldtime.session-autotitle.status`。模型可调用的只读工具名称为 `autotitle_status`。
 
 ## 功能
 
@@ -30,10 +32,12 @@ Adaptive Chinese session titles for OpenCode V2, with multi-task retention, pers
 
 ## 安装
 
+**从 v0.1.6 或更早版本升级：** v0.1.7 更换了插件 ID。请按[旧版状态迁移](docs/MIGRATING-0.1.7.md)保留持久锁和任务记录；首次安装可直接使用下面的步骤。
+
 ### 方式一：从 GitHub 安装（推荐）
 
 ```sh
-opencode plugin add "github:MyOldTime/opencode-session-autotitle#v0.1.6"
+opencode plugin add "github:MyOldTime/opencode-session-autotitle#v0.1.7"
 opencode plugin list
 ```
 
@@ -44,7 +48,7 @@ opencode plugin list
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["github:MyOldTime/opencode-session-autotitle#v0.1.6"]
+  "plugins": ["github:MyOldTime/opencode-session-autotitle#v0.1.7"]
 }
 ```
 
@@ -56,10 +60,10 @@ opencode plugin list
 npm config set @myoldtime:registry https://npm.pkg.github.com --location=user
 npm login --scope=@myoldtime --auth-type=legacy --registry=https://npm.pkg.github.com
 # Username 输入 GitHub 用户名，Password 输入 token
-opencode plugin add "@myoldtime/opencode-session-autotitle@0.1.6"
+opencode plugin add "@myoldtime/opencode-session-autotitle@0.1.7"
 ```
 
-令牌交给 npm 登录保存，勿写入 `opencode.json` 或提交到仓库。使用此方式时，下方配置示例的 `package` 改成 `@myoldtime/opencode-session-autotitle@0.1.6`。
+令牌交给 npm 登录保存，勿写入 `opencode.json` 或提交到仓库。使用此方式时，下方配置示例的 `package` 改成 `@myoldtime/opencode-session-autotitle@0.1.7`。
 
 ### 本地开发安装
 
@@ -71,7 +75,7 @@ npm ci --ignore-scripts
 
 在 OpenCode 配置中将 `package` 指向这个目录的绝对路径，例如 `/path/to/opencode-session-autotitle`；Windows JSON 中可用 `C:/path/to/opencode-session-autotitle`。插件本身无需编译。
 
-**已有本地版本迁移**：先把旧的 `session-autotitle` 目录移出自动发现的 `~/.config/opencode/plugins/`，再将原配置项替换为新的包来源，避免同一插件被两个来源同时加载。插件 ID 保持不变。
+**已有本地版本迁移**：先把旧的 `session-autotitle` 目录移出自动发现的 `~/.config/opencode/plugins/`，再按[旧版状态迁移](docs/MIGRATING-0.1.7.md)替换原配置项。
 
 ## 快速使用
 
@@ -134,7 +138,7 @@ npm ci --ignore-scripts
 
 **OpenChamber 等第三方客户端暂不支持该弹窗命令**；也可让 Agent 调用只读工具 `autotitle_status`，查看是否托管、锁定原因、最近评估结果、任务数等。工具本身不改名，但让 Agent 调用的对话会正常进入聊天历史；希望完全不增加聊天时使用终端版命令。
 
-状态查询由只读 RPC `local.session-autotitle.status.read({sessionID})` 提供，必须传会话所属 location。它不创建托管记录、不迁移内存状态、不解锁、不重置最近结果或调度。`retry_wait` 表示请求失败后等待重试，`model_failed` / `generation_timeout` 表示重试耗尽后的明确失败原因，`cancelled` 表示取消；历史记录仍可能显示 `cancelled_or_timeout`。`invalid_*` 表示输出校验失败；未知状态保留原码，不猜测原因。状态同时返回本次评估的 `generationAttempts` / `generationMaxAttempts` 和安全的 `lastGenerationFailure` 原因码（不保存错误文本、提示词或密钥）。
+状态查询由只读 RPC `myoldtime.session-autotitle.status.read({sessionID})` 提供，必须传会话所属 location。它不创建托管记录、不迁移内存状态、不解锁、不重置最近结果或调度。`retry_wait` 表示请求失败后等待重试，`model_failed` / `generation_timeout` 表示重试耗尽后的明确失败原因，`cancelled` 表示取消；历史记录仍可能显示 `cancelled_or_timeout`。`invalid_*` 表示输出校验失败；未知状态保留原码，不猜测原因。状态同时返回本次评估的 `generationAttempts` / `generationMaxAttempts` 和安全的 `lastGenerationFailure` 原因码（不保存错误文本、提示词或密钥）。
 
 人工改名（包括只改标点）会被视为外部接管并自动锁定。由于公开事件没有可靠的操作者来源，其他插件改名也采用相同保护策略。
 人工改名与 `/autotitle-lock` 共用 `sessions/<sessionID>` 记录里的 `mode: "locked"`，不存在第二把锁；两者都能由 `/autotitle-unlock` 解除。插件自己的标题提交不会锁定会话。
@@ -153,7 +157,7 @@ npm ci --ignore-scripts
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "github:MyOldTime/opencode-session-autotitle#v0.1.6",
+      "package": "github:MyOldTime/opencode-session-autotitle#v0.1.7",
       "options": {
         "mode": "adaptive",
         "language": "zh-CN",
@@ -201,6 +205,7 @@ npm ci --ignore-scripts
 | `cooldownMs` | `60000` | 后续评估冷却，0～3600000 毫秒 |
 | `minNewUserTurns` | `4` | 普通后续更新门槛，1～50 个有效用户回合 |
 | `manageSubsessions` | `false` | 是否接管子会话 |
+| `migrateLegacyState` | `false` | 仅旧 ID 升级时临时启用，配合迁移桥接包；完成后可删除 |
 | `maxContextTokens` | `2000` | 估算输入预算，200～200000 |
 | `recentTurns` | `6` | 提取近期消息的窗口，1～20 |
 | `maxTasks` | `8` | 持久任务数上限，1～24 |
@@ -267,13 +272,13 @@ node scripts/status-smoke.mjs
 - **标题没有变化？** 用 `/autotitle-status` 查看是否锁定、无上下文、未达到门槛或仍在冷却；必要时 `/autotitle-refresh`。输出校验失败会保留原标题。
 - **状态命令不存在？** 确认使用官方终端版并执行 `/reload`。OpenChamber 等客户端目前未适配这个 TUI 弹窗。
 - **模型请求超时？** 提高 `timeoutMs`，或按实际可用模型配置 `model`。`generation_timeout` / `model_failed` 表示生成尝试耗尽。
-- **免费模型聊天正常，自动命名却失败？** 升级到 v0.1.6，并检查状态中的“宿主会话瞬时生成”。旧独立通道缺少免费模型所需的宿主上下文，可能返回误导性的 `Free usage limit reached`；仅凭这条错误不能判定额度已耗尽。保留正常会话的系统提示和工具定义，禁用所有工具的诊断会话也可能触发这种拒绝。
+- **免费模型聊天正常，自动命名却失败？** 升级到最新版本，并检查状态中的“宿主会话瞬时生成”。旧独立通道缺少免费模型所需的宿主上下文，可能返回误导性的 `Free usage limit reached`；仅凭这条错误不能判定额度已耗尽。保留正常会话的系统提示和工具定义，禁用所有工具的诊断会话也可能触发这种拒绝。
 - **Packages 安装出现 401/403/404？** 确认 registry 为 `https://npm.pkg.github.com`，npm 已使用 classic token 登录且具有 `read:packages`。也可以使用上面的 GitHub 直装方式。
 - **想更新版本？** 固定 tag/版本号不会自动升级；把配置中的版本替换成新版本并 `/reload`。使用非固定版本的安装源可通过 `opencode plugin check` / `opencode plugin update` 检查更新。
 
 ## 禁用与卸载
 
-临时禁用：在 `plugins` 列表最后添加 `"-local.session-autotitle"`，保存后自动重载。
+临时禁用：在 `plugins` 列表最后添加 `"-myoldtime.session-autotitle"`，保存后自动重载。
 
 包来源卸载可使用 `opencode plugin remove` 并传入配置中的完整来源，或删除该配置项。本地自动发现目录则需移出 `plugins/`；只删除目录配置项不会关闭自动发现。持久化锁记录不会主动删除。
 
@@ -284,6 +289,9 @@ node scripts/status-smoke.mjs
 ```text
 index.js / tui.js       服务端 / 终端入口
 src/controller.mjs     生命周期、锁、调度、请求重试
+src/identity.mjs       作者命名空间下的统一标识
+src/migration.mjs      旧 ID 状态的一次性导入
+migration/             升级期间临时加载的只读存储桥接
 src/generation.mjs     宿主生成通道选择与瞬时请求隔离
 src/naming.mjs         提示构建、任务列表与输出校验
 src/title-format.mjs   标题渲染与旧格式迁移

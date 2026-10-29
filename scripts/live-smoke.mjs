@@ -87,7 +87,7 @@ try {
   // It does not invoke a model or execute any tools.
   await client.session.prompt({sessionID: old, text: '隔离验收的插件加载检查，不执行任何工作。', resume: false});
   const plugins = await client.plugin.list({location: {directory}});
-  const plugin = plugins.data.find(x => x.id === 'local.session-autotitle');
+  const plugin = plugins.data.find(x => x.id === 'myoldtime.session-autotitle');
   assert.equal(plugin?.state.status, 'active');
   record('global_plugin_active', {id: plugin.id});
   const commands = await client.command.list({location: {directory}});

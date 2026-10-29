@@ -2,7 +2,7 @@
 
 - 包名：`@myoldtime/opencode-session-autotitle`
 - Registry：`https://npm.pkg.github.com`
-- 插件 ID：`local.session-autotitle`
+- 插件 ID：`myoldtime.session-autotitle`
 
 1. 更新 `package.json`、`package-lock.json` 的版本，以及 CHANGELOG、README 和配置示例中的固定版本。
 2. 运行 `npm ci --ignore-scripts`、`npm run check`、`npm test`、`npm pack --dry-run`；按变更范围运行真实服务验收。

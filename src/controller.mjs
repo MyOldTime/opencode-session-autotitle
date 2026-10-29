@@ -5,7 +5,7 @@ import {
   isExplicitTopicChange, titleFingerprint, redactSensitive, truncateGraphemes,
 } from './naming.mjs';
 
-export const PLUGIN_ID = 'local.session-autotitle';
+export { PLUGIN_ID } from './identity.mjs';
 export const EVENT_TYPES = [
   'session.created', 'session.renamed', 'session.moved', 'session.deleted',
   'session.archived', 'session.unarchived', 'session.forked',

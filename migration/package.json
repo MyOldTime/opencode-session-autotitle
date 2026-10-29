@@ -1,0 +1,9 @@
+{
+  "name": "@myoldtime/opencode-session-autotitle-legacy-migration",
+  "version": "0.1.7",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {".": "./index.js", "./rpc": "./rpc.mjs"},
+  "files": ["index.js", "rpc.mjs"]
+}

@@ -1,7 +1,9 @@
 // Structural RPC definition. In OpenCode 2.2.0 Rpc.define returns this object
 // unchanged (verified in @opencode/schema/rpc); no runtime dependency is needed.
+import { STATUS_RPC_ID } from './identity.mjs';
+
 export const AutoTitleStatusRpc = {
-  id: 'local.session-autotitle.status',
+  id: STATUS_RPC_ID,
   events: {},
   methods: {
     read: {

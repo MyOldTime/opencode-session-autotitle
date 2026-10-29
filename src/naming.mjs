@@ -81,6 +81,7 @@ export const DEFAULT_OPTIONS = Object.freeze({
   // timeouts retry; validation/cancellation/write errors never do.
   maxGenerationRetries: 2,
   manageSubsessions: false,
+  migrateLegacyState: false,
   // naming knobs
   language: 'zh-CN',
   model: null,
@@ -124,7 +125,7 @@ const NUMERIC_LIMITS = Object.freeze({
   maxTargetWidth: [8, 300],
 });
 
-const BOOLEAN_OPTIONS = ['manageSubsessions'];
+const BOOLEAN_OPTIONS = ['manageSubsessions', 'migrateLegacyState'];
 const LANGUAGE_RE = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 
 /**

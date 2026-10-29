@@ -10,6 +10,7 @@ import {Service} from '@opencode/client/service';
 import {SessionID} from '@opencode/schema/session-id';
 import {AutoTitleStatusRpc} from '../src/status-rpc.mjs';
 import {isCurrentTitleFormat} from '../src/naming.mjs';
+import {PLUGIN_ID} from '../src/identity.mjs';
 
 const parseModel = value => {
   assert.match(value, /^[^/#]+\/[^/#]+(?:#[^/#]+)?$/);
@@ -19,7 +20,7 @@ const parseModel = value => {
 const version = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const root = process.platform === 'win32' && fs.existsSync('Z:/windows-tmp/opencode') ? 'Z:/windows-tmp/opencode' : tmpdir();
 const location = {directory: path.resolve(process.env.AUTOTITLE_COMPAT_DIRECTORY ?? path.join(root, 'autotitle-compatibility-e2e'))};
-const expectedPlugin = process.env.AUTOTITLE_COMPAT_PLUGIN_ID ?? 'local.session-autotitle';
+const expectedPlugin = process.env.AUTOTITLE_COMPAT_PLUGIN_ID ?? PLUGIN_ID;
 const override = process.env.AUTOTITLE_COMPAT_OVERRIDE ? parseModel(process.env.AUTOTITLE_COMPAT_OVERRIDE) : undefined;
 const reportFile = process.env.AUTOTITLE_COMPAT_REPORT ?? `artifacts/compatibility-smoke-v${version}.json`;
 fs.mkdirSync(location.directory, {recursive: true});fs.mkdirSync(path.dirname(reportFile), {recursive: true});

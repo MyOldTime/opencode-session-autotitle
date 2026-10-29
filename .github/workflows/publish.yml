@@ -29,7 +29,7 @@ jobs:
       - name: Verify release version
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: node --input-type=module -e "import fs from 'node:fs'; import assert from 'node:assert/strict'; const p=JSON.parse(fs.readFileSync('package.json')); assert.equal(process.env.RELEASE_TAG, 'v'+p.version); assert.equal(p.name, '@myoldtime/opencode-session-autotitle');"
+        run: node --input-type=module -e "import fs from 'node:fs'; import assert from 'node:assert/strict'; const p=JSON.parse(fs.readFileSync('package.json')); assert.equal(process.env.RELEASE_TAG, 'v'+p.version); assert.equal(p.name, '@myoldtime/opencode-session-autotitle'); assert.equal(JSON.parse(fs.readFileSync('migration/package.json')).version, p.version);"
       - run: npm ci --ignore-scripts
       - run: npm run check
       - run: npm test
