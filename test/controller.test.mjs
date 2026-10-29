@@ -13,6 +13,17 @@ const assistant = (id = 'a1') => ({id, type: 'assistant', content: [
   {type: 'text', text: '已经定位刷新路径的问题。'},
 ]});
 
+// The real OpenCode server keeps an event loop alive; an isolated Node 22 test
+// process does not. Supply a bounded host lifetime when testing unref'ed timers.
+async function awaitHostWork(work) {
+  let timer;
+  try {
+    return await Promise.race([work, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Host work did not finish within 5 seconds')), 5000);
+    })]);
+  } finally { clearTimeout(timer); }
+}
+
 async function harness({store = new Map(), options = {}, session = {}, sleep} = {}) {
   const sessions = new Map();
   const contexts = new Map();
@@ -402,7 +413,7 @@ test('timeout retries each attempt with a fresh signal and ignores late results'
     signals.push(opts.signal);
     return new Promise(resolve => { resolvers.push(resolve); });
   });
-  const work = h.ctl.evaluate('s1'); await delay(850); const result = await work;
+  const result = await awaitHostWork(h.ctl.evaluate('s1'));
   assert.equal(result.outcome, 'generation_timeout');
   assert.equal(h.calls.length, 3);
   assert.equal(new Set(signals).size, 3, 'each attempt gets its own signal');
@@ -428,7 +439,7 @@ test('a timed-out attempt followed by a successful retry writes once', async t =
     if (calls === 1) return new Promise(() => {}); // provider ignores abort
     return Promise.resolve({text: answer()});
   });
-  const result = await h.ctl.evaluate('s1');
+  const result = await awaitHostWork(h.ctl.evaluate('s1'));
   assert.equal(result.outcome, 'renamed');
   assert.equal(h.calls.length, 2);
   assert.equal(h.writes.length, 1);
@@ -622,7 +633,7 @@ test('production backoff waits one second before retrying and cancels promptly',
       return {text: answer()};
     });
     const started = Date.now();
-    const result = await h.ctl.evaluate('s1');
+    const result = await awaitHostWork(h.ctl.evaluate('s1'));
     assert.equal(result.outcome, 'renamed');
     assert.equal(h.calls.length, 2);
     assert.ok(Date.now() - started >= 950, 'first retry waits about 1s');
