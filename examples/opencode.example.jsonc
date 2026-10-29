@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "github:MyOldTime/opencode-session-autotitle#v0.1.5",
+      "options": {
+        "mode": "adaptive",
+        "language": "zh-CN",
+        "debounceMs": 1500,
+        "cooldownMs": 60000,
+        "minNewUserTurns": 4,
+        "timeoutMs": 45000,
+        "maxGenerationRetries": 2,
+        "maxContextTokens": 2000,
+        "manageSubsessions": false
+      }
+    }
+  ]
+}
