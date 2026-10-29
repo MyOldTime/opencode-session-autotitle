@@ -19,6 +19,7 @@ Adaptive Chinese session titles for OpenCode V2, with multi-task retention, pers
 - **只读状态弹窗**：`/autotitle-status` 不调用模型、不增加聊天消息。
 - **有界重试**：生成请求失败或超时后最多重试 2 次，可取消，迟到结果不提交。
 - **模型跟随**：默认使用当前会话的模型与 variant，也支持插件单独指定模型。
+- **免费模型适配**：根据宿主目录中的价格信息，自动为 OpenCode 免费模型使用会话瞬时生成通道。
 
 ## 环境要求
 
@@ -32,7 +33,7 @@ Adaptive Chinese session titles for OpenCode V2, with multi-task retention, pers
 ### 方式一：从 GitHub 安装（推荐）
 
 ```sh
-opencode plugin add "github:MyOldTime/opencode-session-autotitle#v0.1.5"
+opencode plugin add "github:MyOldTime/opencode-session-autotitle#v0.1.6"
 opencode plugin list
 ```
 
@@ -43,7 +44,7 @@ opencode plugin list
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["github:MyOldTime/opencode-session-autotitle#v0.1.5"]
+  "plugins": ["github:MyOldTime/opencode-session-autotitle#v0.1.6"]
 }
 ```
 
@@ -55,10 +56,10 @@ opencode plugin list
 npm config set @myoldtime:registry https://npm.pkg.github.com --location=user
 npm login --scope=@myoldtime --auth-type=legacy --registry=https://npm.pkg.github.com
 # Username 输入 GitHub 用户名，Password 输入 token
-opencode plugin add "@myoldtime/opencode-session-autotitle@0.1.5"
+opencode plugin add "@myoldtime/opencode-session-autotitle@0.1.6"
 ```
 
-令牌交给 npm 登录保存，勿写入 `opencode.json` 或提交到仓库。使用此方式时，下方配置示例的 `package` 改成 `@myoldtime/opencode-session-autotitle@0.1.5`。
+令牌交给 npm 登录保存，勿写入 `opencode.json` 或提交到仓库。使用此方式时，下方配置示例的 `package` 改成 `@myoldtime/opencode-session-autotitle@0.1.6`。
 
 ### 本地开发安装
 
@@ -152,7 +153,7 @@ npm ci --ignore-scripts
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "github:MyOldTime/opencode-session-autotitle#v0.1.5",
+      "package": "github:MyOldTime/opencode-session-autotitle#v0.1.6",
       "options": {
         "mode": "adaptive",
         "language": "zh-CN",
@@ -175,6 +176,17 @@ npm ci --ignore-scripts
 可选最高优先级覆盖示例：在此插件的 `options` 内添加 `"model": {"providerID":"openai","id":"gpt-6-astra","variant":"low"}`。删除该项或设为 `null` 即恢复跟随会话。
 不另外读取或保存 API 密钥，不修改主 Agent 模型。代码的 `timeoutMs` 默认值为 **10000**，上例建议配置为 **45000**；所选模型更慢时可提高。默认允许两次重试时，生成与退避最坏等待约为 `3 × timeoutMs + 3 秒`，按上例约 **138 秒**（不含上下文读取与排队）。
 `mode: "initial"` 只执行初始命名和首次校准；默认 `adaptive` 允许后续更新。
+
+### 模型调用通道
+
+授权、供应商协议、模型设置及 variant 均由 OpenCode 管理，插件不自行请求供应商 API。
+
+- **OpenCode 免费模型**：查询 `ctx.model.list()` 中 `opencode` / `opencode-go` 模型的价格，所有输入/输出档位均为 0 时使用 `ctx.session.generate`。保留宿主生成的系统提示、工具定义、请求信息和授权；一次性关联的 `generate` 钩子只把消息替换为经过筛选的命名输入，不混入完整聊天历史。
+- **其他模型**：使用 `ctx.experimental.generate.text` 独立生成。
+- 免费命名模型与当前会话模型不同时，创建由宿主分配 ID 的空临时子会话，完成、失败或取消后清理。临时会话不会接管自动命名，主会话模型不变。
+- 两条通道都不写入聊天消息。会话瞬时接口会携带宿主工具定义，但不执行工具循环；空文本或工具调用而无有效文本会被输出校验拒绝。
+
+`/autotitle-status` 中的“调用通道”及 RPC 的 `lastGenerationRoute` 可用于确认实际路径。命名输入仍受 `maxContextTokens` 的估算预算限制；会话通道另外包含宿主的系统提示和工具定义，这部分由宿主管理，不计入插件输入预算。
 
 ### 常用选项
 
@@ -205,7 +217,7 @@ npm ci --ignore-scripts
 
 ## 安全与已知边界
 
-- 命名通过 `ctx.experimental.generate.text` 独立执行，无工具、无会话历史写入；模型调用消耗现有服务的额度。
+- 命名使用上面的宿主生成通道，不执行工具循环、不写会话历史；模型调用消耗现有服务的额度。
 - 输入使用用户及可见助手文本，以及最近一份已完成压缩摘要；不直接提取 reasoning、工具输出和系统消息。使用首个诉求与近期内容，约 2,000 tokens 的**估算**预算（不是模型 tokenizer 的精确计数）。
 - 对常见密钥、Bearer、邮箱、手机号、绝对路径做特征脱敏；这不是万能隐私检测，未知格式仍可能未被识别。不会向新增第三方服务发送数据。
 - 不记录原始模型请求/响应。故障仅保留原因码；请求失败或超时最多重试 2 次（总计不超过 3 次），期间可随时取消，耗尽后保留原标题，不无限重试。
@@ -237,6 +249,8 @@ node scripts/model-smoke.mjs openai/gpt-6-astra#low technical_array_call
 
 ```powershell
 node scripts/live-smoke.mjs
+# 免费模型目录逐项验收；也可在命令后指定 provider/model#variant
+node scripts/compatibility-smoke.mjs
 ```
 
 只读状态命令验收（不调用模型，创建并清理隔离会话；使用真实服务 RPC 和捕获弹窗的客户端适配器，不等同于终端画面的人工验收）：
@@ -253,6 +267,7 @@ node scripts/status-smoke.mjs
 - **标题没有变化？** 用 `/autotitle-status` 查看是否锁定、无上下文、未达到门槛或仍在冷却；必要时 `/autotitle-refresh`。输出校验失败会保留原标题。
 - **状态命令不存在？** 确认使用官方终端版并执行 `/reload`。OpenChamber 等客户端目前未适配这个 TUI 弹窗。
 - **模型请求超时？** 提高 `timeoutMs`，或按实际可用模型配置 `model`。`generation_timeout` / `model_failed` 表示生成尝试耗尽。
+- **免费模型聊天正常，自动命名却失败？** 升级到 v0.1.6，并检查状态中的“宿主会话瞬时生成”。旧独立通道缺少免费模型所需的宿主上下文，可能返回误导性的 `Free usage limit reached`；仅凭这条错误不能判定额度已耗尽。保留正常会话的系统提示和工具定义，禁用所有工具的诊断会话也可能触发这种拒绝。
 - **Packages 安装出现 401/403/404？** 确认 registry 为 `https://npm.pkg.github.com`，npm 已使用 classic token 登录且具有 `read:packages`。也可以使用上面的 GitHub 直装方式。
 - **想更新版本？** 固定 tag/版本号不会自动升级；把配置中的版本替换成新版本并 `/reload`。使用非固定版本的安装源可通过 `opencode plugin check` / `opencode plugin update` 检查更新。
 
@@ -269,6 +284,7 @@ node scripts/status-smoke.mjs
 ```text
 index.js / tui.js       服务端 / 终端入口
 src/controller.mjs     生命周期、锁、调度、请求重试
+src/generation.mjs     宿主生成通道选择与瞬时请求隔离
 src/naming.mjs         提示构建、任务列表与输出校验
 src/title-format.mjs   标题渲染与旧格式迁移
 src/status-*.mjs       只读状态 RPC 与展示

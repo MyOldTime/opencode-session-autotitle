@@ -126,6 +126,13 @@ test('display reports generation attempts, limit and a sanitized failure code', 
   assert.doesNotMatch(legacy, /最近生成失败/);
 });
 
+test('display explains the catalog-selected generation route and normal ownership reasons', () => {
+  for (const [route, label] of [['session', '宿主会话瞬时生成'], ['detached', '宿主独立生成']]) {
+    const message = formatStatus({...stored(), reason: 'new_session', lastGenerationRoute: route}, {sessionID: id, timeoutMs: 45000});
+    assert.ok(message.includes(label));assert.match(message, /新会话自动管理/);assert.doesNotMatch(message, /未识别状态/);
+  }
+});
+
 function uiHarness() {
   let command, route = {type: 'session', sessionID: id};
   const calls = [], alerts = [], toasts = [];

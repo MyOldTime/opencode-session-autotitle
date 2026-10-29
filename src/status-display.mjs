@@ -14,6 +14,7 @@ const OUTCOMES = {
 const REASONS = {
   default_unlocked: '默认未锁定', explicit_lock: '通过命令锁定', external_rename: '人工或其他插件改名',
   out_of_scope: '不在自动命名范围', fork_not_adopted: '尚未接管分叉会话',
+  new_session: '新会话自动管理', native_title: '接管宿主初始命名', explicit_unlock: '通过命令解锁',
 };
 const FAILURES = {
   model_failed: '模型请求失败', generation_timeout: '模型请求超时',
@@ -48,6 +49,7 @@ export function formatStatus(status, {sessionID, timeoutMs}) {
     `最近结果：${describe(status.lastOutcome, OUTCOMES)}`,
     `本轮生成尝试：${generation}${failure}`,
     `最近使用的命名模型：${model}`,
+    `调用通道：${status.lastGenerationRoute === 'session' ? '宿主会话瞬时生成' : status.lastGenerationRoute === 'detached' ? '宿主独立生成' : '尚无记录'}`,
     `最近评估时间（UTC）：${time}`,
     `命名超时：${timeoutMs / 1000} 秒；保存任务：${status.taskCount ?? 0}；待确认写入：${status.pending ? '是' : '否'}`,
     '', '只读查询：不调用模型、不写入聊天、不改标题或锁定状态。',

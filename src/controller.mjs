@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { NamingGenerator, generationRoute, TRANSIENT_SESSION } from './generation.mjs';
 import {
   normalizeOptions, buildNamingPrompt, parseNamingResult, meaningfulUserText,
   isExplicitTopicChange, titleFingerprint, redactSensitive, truncateGraphemes,
@@ -123,6 +124,7 @@ export class AutoTitleController {
     this.options = normalizeOptions(ctx.options ?? {});
     this.now = now;
     this.log = log;
+    this.generator = new NamingGenerator(ctx, {log});
     this.sleep = sleep;
     this.life = new AbortController();
     this.machines = new Map();
@@ -174,7 +176,8 @@ export class AutoTitleController {
   }
 
   eligible(info) {
-    return this.owns(info) && !info.time?.archived && (this.options.manageSubsessions || !info.parentID);
+    return this.owns(info) && !info.time?.archived && !info.metadata?.[TRANSIENT_SESSION]
+      && (this.options.manageSubsessions || !info.parentID);
   }
 
   automaticScope(info, state) {
@@ -254,6 +257,7 @@ export class AutoTitleController {
     if (typeof saved === 'number') this.startedAt = saved;
     else await this.ctx.storage.set('meta/installed-at', this.startedAt);
     this.registrations.push(await this.ctx.session.hook('title', (event) => this.titleHook(event)));
+    this.registrations.push(await this.generator.start());
     this.registrations.push(await this.ctx.command.transform((editor) => {
       for (const [name, description, operation] of [
         ['autotitle-lock', '锁定当前会话名称，停止自动命名', 'lock'],
@@ -479,10 +483,13 @@ export class AutoTitleController {
         ...(hasAnchor ? ['anchor'] : []), ...(s.tasks.length ? ['tasks'] : []),
       ];
       const model = await selectNamingModel(this.ctx, info, this.options.model);
+      const route = await generationRoute(this.ctx, model);
+      const sessionModel = route === 'session' ? await selectNamingModel(this.ctx, info) : undefined;
       s.model = model ?? null; // diagnostic last-used model only, never a fallback
+      s.lastGenerationRoute = route;
       await this.save(m);
       if (this.closed || epoch !== m.epoch) return this.outcome(m, 'stale');
-      return { epoch, state: s, info, prompt, model, fingerprint, basis: context.basis, fallback,
+      return { epoch, state: s, info, prompt, model, route, sessionModel, fingerprint, basis: context.basis, fallback,
         calibration, hasAssistant: messages.some((x) => x.role === 'assistant'),
         tasks: clone(s.tasks), userIDs: sig.meaningful.map((x) => x.id), source };
     });
@@ -519,10 +526,9 @@ export class AutoTitleController {
         // request with missing/empty text is validated once, never retried.
         if (attemptResult.ok) { text = attemptResult.text; failure = null; break; }
         failure = attemptResult.failure;
-        if (failure === 'cancelled') { stopped = 'cancelled'; break; }
+        if (failure === 'cancelled' || failure === 'model_changed') { stopped = failure; break; }
         await this.serial(m, async () => {
           if (this.closed || m.removed || m.epoch !== prepared.epoch || m.state?.mode !== 'auto') return;
-          m.state.generationAttempts = attempt;
           m.state.generationMaxAttempts = maxAttempts;
           m.state.lastGenerationFailure = failure;
           if (attempt < maxAttempts) m.state.lastOutcome = 'retry_wait';
@@ -633,19 +639,19 @@ export class AutoTitleController {
         if (signal.aborted || runController.signal.aborted || this.closed || m.removed || m.epoch !== prepared.epoch) {
           throw signal.reason ?? abortError();
         }
-        // Diagnostic-only synchronous counter, immediately before the API call.
-        // In-flight status reads this live value; the next state save persists it.
-        prepared.state.generationAttempts += 1;
-        return this.ctx.experimental.generate.text(
-          { prompt: prepared.prompt, ...(prepared.model ? { model: prepared.model } : {}) }, { signal },
-        );
+        return this.generator.generate({...prepared, signal, onDispatch: () => {
+          // Count actual generation API calls, not preparation/helper creation.
+          if (signal.aborted || this.closed || m.removed || m.epoch !== prepared.epoch) throw abortError();
+          prepared.state.generationAttempts += 1;
+        }});
       });
       // A request that loses the race (e.g. late provider failure) is still handled.
       request.catch(() => {});
       const response = await Promise.race([request, aborted]);
       return { ok: true, text: response?.text };
-    } catch {
-      return { failure: this.classifyGenerationFailure({ m, prepared, runController, deadline }) };
+    } catch (error) {
+      const failure = this.classifyGenerationFailure({ m, prepared, runController, deadline });
+      return { failure: failure === 'model_failed' && error?.code === 'autotitle_model_changed' ? 'model_changed' : failure };
     } finally {
       clearTimeout(timer);
       if (onAbort) signal.removeEventListener('abort', onAbort);
@@ -815,6 +821,7 @@ export class AutoTitleController {
         lastTrigger: s.lastTrigger ?? null, contextSources: s.contextSources ?? [],
         generationAttempts: s.generationAttempts ?? 0,
         generationMaxAttempts: s.generationMaxAttempts ?? 0,
+        lastGenerationRoute: s.lastGenerationRoute ?? null,
         lastGenerationFailure: s.lastGenerationFailure ?? null }
         : { managed, tracked: false, mode: 'auto', locked: false,
           reason: managed ? 'default_unlocked' : 'out_of_scope', lastOutcome: 'not_evaluated' };

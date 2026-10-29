@@ -1,6 +1,6 @@
 {
   "name": "@myoldtime/opencode-session-autotitle",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "description": "Adaptive Chinese session titles for OpenCode V2 with multi-task retention, manual locks, read-only status and bounded retries.",
   "license": "MIT",
@@ -27,7 +27,7 @@
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "prepublishOnly": "npm run check && npm test",
-    "check": "node --check index.js && node --check tui.js && node --check src/controller.mjs && node --check src/naming.mjs && node --check src/title-format.mjs && node --check src/status-rpc.mjs && node --check src/status-display.mjs && node --check scripts/model-smoke.mjs && node --check scripts/live-smoke.mjs && node --check scripts/status-smoke.mjs"
+    "check": "node --check index.js && node --check tui.js && node --check src/controller.mjs && node --check src/generation.mjs && node --check src/naming.mjs && node --check src/title-format.mjs && node --check src/status-rpc.mjs && node --check src/status-display.mjs && node --check scripts/model-smoke.mjs && node --check scripts/live-smoke.mjs && node --check scripts/status-smoke.mjs && node --check scripts/compatibility-smoke.mjs"
   },
   "engines": {
     "node": ">=20.3"

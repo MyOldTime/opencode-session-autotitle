@@ -28,6 +28,7 @@ async function harness({store = new Map(), options = {}, session = {}, sleep} = 
   const sessions = new Map();
   const contexts = new Map();
   const commands = new Map();
+  const hooks = new Map();
   const calls = [];
   const writes = [];
   let generation = async () => ({text: answer()});
@@ -49,7 +50,15 @@ async function harness({store = new Map(), options = {}, session = {}, sleep} = 
         writes.push({sessionID, title});
         void ctl.handleEvent({type: 'session.renamed', data: {sessionID, title}});
       },
-      hook: async () => ({dispose: async () => {}}),
+      hook: async (name, fn) => {hooks.set(name, fn);return {dispose: async () => hooks.delete(name)};},
+      generate: async ({sessionID, prompt}, opts) => {
+        const model = sessions.get(sessionID).model;
+        const event = {sessionID, model, system: [{type: 'text', text: 'host'}], tools: {read: {}},
+          messages: [{role: 'user', content: [{type: 'text', text: prompt}]}]};
+        await hooks.get('generate')(event);
+        const input = {prompt: event.messages[0].content[0].text, model};
+        calls.push(input);return generation(input, opts);
+      },
       wait: async ({sessionID}) => { if (sessions.get(sessionID)?.executing) throw new Error('busy'); },
     },
     command: {transform: async fn => { fn({add: item => commands.set(item.name, item)}); return {dispose: async () => {}}; }},
@@ -503,6 +512,26 @@ test('changing session model affects the next request, not a cached title model'
   h.setGeneration(async () => ({text: JSON.stringify({action: 'keep', reasonCode: 'no_change'})}));
   await h.ctl.command('refresh', 's1');
   assert.deepEqual(h.calls[1].model, h.sessions.get('s1').model);
+});
+
+test('free-model session transport retains controller retries, model selection, and single title commit', async t => {
+  const model = {providerID: 'opencode', id: 'catalog-free', variant: 'default'};
+  const h = await harness({session: {model}});t.after(() => h.ctl.dispose());
+  h.ctx.model = {list: async () => ({data: [{...model, cost: [{input: 0, output: 0}]}]})};
+  let attempts = 0;
+  h.setGeneration(async () => {if (++attempts === 1) throw new Error('temporary failure');return {text: answer()};});
+  await h.ctl.command('refresh', 's1');
+  assert.equal(h.calls.length, 2);assert.deepEqual(h.calls[0], h.calls[1]);
+  assert.deepEqual(h.calls[1].model, model);assert.equal(h.writes.length, 1);
+  assert.equal((await h.ctl.status('s1')).lastGenerationRoute, 'session');
+});
+
+test('transient naming helpers are excluded even when managing ordinary child sessions', async t => {
+  const h = await harness({options: {manageSubsessions: true}, session: {
+    parentID: 'parent', metadata: {'session-autotitle.transient': true},
+  }});t.after(() => h.ctl.dispose());
+  await h.create();assert.equal(h.store.has('sessions/s1'), false);
+  assert.equal((await h.ctl.status('s1')).managed, false);
 });
 
 test('a model switch during generation discards the old-model result', async t => {
