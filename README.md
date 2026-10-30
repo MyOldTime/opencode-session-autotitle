@@ -1,6 +1,7 @@
 # OpenCode Session AutoTitle
 
 [![CI](https://github.com/MyOldTime/opencode-session-autotitle/actions/workflows/ci.yml/badge.svg)](https://github.com/MyOldTime/opencode-session-autotitle/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@myoldtime/opencode-session-autotitle)](https://www.npmjs.com/package/@myoldtime/opencode-session-autotitle)
 [![Release](https://img.shields.io/github/v/release/MyOldTime/opencode-session-autotitle)](https://github.com/MyOldTime/opencode-session-autotitle/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -8,7 +9,7 @@
 
 Adaptive Chinese session titles for OpenCode V2, with multi-task retention, persistent manual locks, read-only status and bounded generation retries.
 
-插件 ID：`myoldtime.session-autotitle`；GitHub Packages 包名：`@myoldtime/opencode-session-autotitle`。包含服务端和官方终端版 TUI 入口，无生产运行依赖。
+插件 ID：`myoldtime.session-autotitle`；npm 包名：`@myoldtime/opencode-session-autotitle`，在 npmjs.org 与 GitHub Packages 同名发布。包含服务端和官方终端版 TUI 入口，无生产运行依赖。
 
 标识采用作者的 GitHub/npm 命名空间：服务端 `myoldtime.session-autotitle`、终端 `myoldtime.session-autotitle.tui`、状态 RPC `myoldtime.session-autotitle.status`。模型可调用的只读工具名称为 `autotitle_status`。
 
@@ -34,27 +35,40 @@ Adaptive Chinese session titles for OpenCode V2, with multi-task retention, pers
 
 **从 v0.1.6 或更早版本升级：** v0.1.7 更换了插件 ID。请按[旧版状态迁移](docs/MIGRATING-0.1.7.md)保留持久锁和任务记录；首次安装可直接使用下面的步骤。
 
-### 方式一：从 GitHub 安装（推荐）
+### 方式一：从 npmjs.org 安装（推荐）
+
+npmjs.org 上的公开包安装不需要登录 npm，也不需要提供 token。
 
 ```sh
-opencode plugin add "github:MyOldTime/opencode-session-autotitle#v0.1.7"
+opencode plugin add "@myoldtime/opencode-session-autotitle@0.1.7"
 opencode plugin list
 ```
 
-固定版本便于复现。安装后可在终端执行 `/reload`，进入会话并运行 `/autotitle-status` 查看状态。
+固定版本便于复现；安装后可在终端执行 `/reload`，进入会话并运行 `/autotitle-status` 查看状态。
 
 如果希望仅对某项目生效，在该项目的 `opencode.json` 中配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["github:MyOldTime/opencode-session-autotitle#v0.1.7"]
+  "plugins": ["@myoldtime/opencode-session-autotitle@0.1.7"]
 }
 ```
 
-### 方式二：从 GitHub Packages 安装
+`@myoldtime/opencode-session-autotitle@0.1.7` 在 npmjs.org 与 GitHub Packages 是同一个包名，实际下载来源由本机 npm 的 `@myoldtime:registry` 配置决定。若该 scope 曾被指向 GitHub Packages，请先按方式三末尾的命令切回 npmjs.org，再执行上述安装。
 
-本项目发布到 **GitHub Packages 的 npm registry**，不是 npmjs.org。根据 GitHub 的规则，即使包是公有的，安装也需要使用具有 `read:packages` 权限的 **personal access token (classic)** 登录。
+### 方式二：从 GitHub 标签安装
+
+```sh
+opencode plugin add "github:MyOldTime/opencode-session-autotitle#v0.1.7"
+opencode plugin list
+```
+
+该方式直接读取 GitHub 仓库，不经过 npm registry，也不需要任何 token；固定 tag 同样便于复现。仅对某项目生效时，把项目 `opencode.json` 的 `plugins` 条目写成 `github:MyOldTime/opencode-session-autotitle#v0.1.7`。
+
+### 方式三：从 GitHub Packages 安装
+
+npmjs.org 与 GitHub Packages 是**两个独立 registry**，同一版本需要分别发布。根据 GitHub 的规则，即使包在 GitHub Packages 中是公有的，安装也需要使用具有 `read:packages` 权限的 **personal access token (classic)** 登录。
 
 ```sh
 npm config set @myoldtime:registry https://npm.pkg.github.com --location=user
@@ -63,7 +77,13 @@ npm login --scope=@myoldtime --auth-type=legacy --registry=https://npm.pkg.githu
 opencode plugin add "@myoldtime/opencode-session-autotitle@0.1.7"
 ```
 
-令牌交给 npm 登录保存，勿写入 `opencode.json` 或提交到仓库。使用此方式时，下方配置示例的 `package` 改成 `@myoldtime/opencode-session-autotitle@0.1.7`。
+令牌交给 npm 登录保存，勿写入 `opencode.json` 或提交到仓库。若之后要改回 npmjs.org 安装，把该 scope 指回官方 registry（或删除 scope 覆盖，恢复默认）：
+
+```sh
+npm config set @myoldtime:registry https://registry.npmjs.org --location=user
+```
+
+不切回时，`@myoldtime/...` 的安装仍会路由到 GitHub Packages，容易出现 401/403/404。
 
 ### 本地开发安装
 
@@ -157,7 +177,7 @@ npm ci --ignore-scripts
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "github:MyOldTime/opencode-session-autotitle#v0.1.7",
+      "package": "@myoldtime/opencode-session-autotitle@0.1.7",
       "options": {
         "mode": "adaptive",
         "language": "zh-CN",
@@ -273,7 +293,7 @@ node scripts/status-smoke.mjs
 - **状态命令不存在？** 确认使用官方终端版并执行 `/reload`。OpenChamber 等客户端目前未适配这个 TUI 弹窗。
 - **模型请求超时？** 提高 `timeoutMs`，或按实际可用模型配置 `model`。`generation_timeout` / `model_failed` 表示生成尝试耗尽。
 - **免费模型聊天正常，自动命名却失败？** 升级到最新版本，并检查状态中的“宿主会话瞬时生成”。旧独立通道缺少免费模型所需的宿主上下文，可能返回误导性的 `Free usage limit reached`；仅凭这条错误不能判定额度已耗尽。保留正常会话的系统提示和工具定义，禁用所有工具的诊断会话也可能触发这种拒绝。
-- **Packages 安装出现 401/403/404？** 确认 registry 为 `https://npm.pkg.github.com`，npm 已使用 classic token 登录且具有 `read:packages`。也可以使用上面的 GitHub 直装方式。
+- **GitHub Packages 安装出现 401/403/404？** 确认 registry 为 `https://npm.pkg.github.com`，npm 已使用 classic token 登录且具有 `read:packages`。若只想用公开包，改用 npmjs.org 安装或 GitHub 标签直装，并把 `@myoldtime:registry` 切回 `https://registry.npmjs.org`，避免请求被路由到 GitHub Packages。
 - **想更新版本？** 固定 tag/版本号不会自动升级；把配置中的版本替换成新版本并 `/reload`。使用非固定版本的安装源可通过 `opencode plugin check` / `opencode plugin update` 检查更新。
 
 ## 禁用与卸载
@@ -305,7 +325,22 @@ scripts/               需主动运行的真实服务验收
 - [发布流程](docs/RELEASING.md)
 - [提交问题](https://github.com/MyOldTime/opencode-session-autotitle/issues)
 
-发布 GitHub Release 后，工作流通过仓库 `GITHUB_TOKEN` 发布到 GitHub Packages。npm 包只包含运行入口、源码和公开文档，不包含测试报告或开发依赖。
+发布 GitHub Release 后，既有工作流 `Publish GitHub Package` 通过仓库 `GITHUB_TOKEN` 发布到 **GitHub Packages**，仅覆盖这一个 registry。npmjs.org 的 `@myoldtime/opencode-session-autotitle@0.1.7` 是本次额外的手动发布，仓库尚未配置 npmjs 自动发布，因此两个 registry 的版本需要各自确认。npm 包只包含运行入口、源码和公开文档，不包含测试报告或开发依赖。
+
+维护者手动发布到 npmjs.org 时需同时显式覆盖默认 registry 与 scope registry：`package.json` 的 `publishConfig` 默认指向 GitHub Packages，本机的 `@myoldtime:registry` 也可能指向 `https://npm.pkg.github.com`，而 scope registry 优先于默认 registry。两个参数都给出，发布目标与 scope 路由才会明确落在 npmjs.org：
+
+```sh
+npm ci --ignore-scripts
+npm publish --registry=https://registry.npmjs.org --@myoldtime:registry=https://registry.npmjs.org --access public
+```
+
+命令不传 `--ignore-scripts`，现有 `prepublishOnly` 会在发布前自动执行 `npm run check` 和 `npm test`。若想手工控制测试时机，可先单独运行这两条命令，再在发布命令中加 `--ignore-scripts`。
+
+发布前可用 `npm whoami --registry=https://registry.npmjs.org` 确认登录账号；发布后用同样的 scope 覆盖核验 npmjs.org 上的实际产物：
+
+```sh
+npm view @myoldtime/opencode-session-autotitle@0.1.7 dist.tarball --registry=https://registry.npmjs.org --@myoldtime:registry=https://registry.npmjs.org
+```
 
 ## 许可证
 
